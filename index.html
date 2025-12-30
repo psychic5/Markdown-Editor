@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #2d2d2d 0%, #3d3d3d 100%);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #404040;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #61dafb;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            background: #404040;
+            border: 1px solid #555;
+            color: #d4d4d4;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .header-btn:hover {
+            background: #505050;
+            border-color: #61dafb;
+        }
+
+        .header-btn.primary {
+            background: #0e639c;
+            border-color: #1177bb;
+        }
+
+        .header-btn.primary:hover {
+            background: #1177bb;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            background: #2d2d2d;
+            padding: 8px 15px;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #404040;
+        }
+
+        .toolbar-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: #d4d4d4;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: #404040;
+            border-color: #555;
+        }
+
+        .toolbar-separator {
+            width: 1px;
+            background: #404040;
+            margin: 0 8px;
+        }
+
+        /* Main Container */
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Editor Panel */
+        .editor-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 3px solid #404040;
+            min-width: 300px;
+        }
+
+        .panel-header {
+            background: #2d2d2d;
+            padding: 10px 15px;
+            font-size: 0.85rem;
+            color: #888;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .editor {
+            flex: 1;
+            width: 100%;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: none;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+        }
+
+        .editor::placeholder {
+            color: #555;
+        }
+
+        /* Resizer */
+        .resizer {
+            width: 5px;
+            background: #404040;
+            cursor: col-resize;
+            transition: background 0.2s;
+        }
+
+        .resizer:hover {
+            background: #61dafb;
+        }
+
+        /* Preview Panel */
+        .preview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 300px;
+            background: #252526;
+        }
+
+        .preview {
+            flex: 1;
+            padding: 20px 30px;
+            overflow-y: auto;
+            line-height: 1.3;
+        }
+
+        /* Markdown Styles */
+        .preview h1,
+        .preview h2,
+        .preview h3,
+        .preview h4,
+        .preview h5,
+        .preview h6,
+        .preview p,
+        .preview ul,
+        .preview ol,
+        .preview table,
+        .preview pre,
+        .preview blockquote,
+        .preview hr {
+            margin-left: 0 !important;
+            padding-left: 0;
+            text-indent: 0;
+        }
+
+        .preview ul,
+        .preview ol {
+            padding-left: 1.2em !important;
+        }
+
+        .preview h1 {
+            font-size: 2rem;
+            margin: 0.5em 0;
+            padding-bottom: 0.3em;
+            border-bottom: 2px solid #404040;
+            color: #61dafb;
+        }
+
+        .preview h2 {
+            font-size: 1.6rem;
+            margin: 0.8em 0 0.4em;
+            color: #4fc3f7;
+        }
+
+        .preview h3 {
+            font-size: 1.3rem;
+            margin: 1.2em 0 0.4em;
+            color: #81d4fa;
+        }
+
+        .preview h4, .preview h5, .preview h6 {
+            font-size: 1.1rem;
+            margin: 0.8em 0 0.4em;
+            color: #b3e5fc;
+        }
+
+        .preview p {
+            margin: 0.6em 0 0.2em;
+            color: #d4d4d4;
+        }
+
+        .preview p strong:first-child {
+            display: inline-block;
+            margin-top: 0.3em;
+        }
+
+        .preview a {
+            color: #61dafb;
+            text-decoration: none;
+        }
+
+        .preview a:hover {
+            text-decoration: underline;
+        }
+
+        .preview code {
+            background: #2d2d2d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9em;
+            color: #ce9178;
+        }
+
+        .preview pre {
+            background: #1e1e1e;
+            border: 1px solid #404040;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-x: auto;
+            margin: 0.5em 0;
+        }
+
+        .preview pre code {
+            background: transparent;
+            padding: 0;
+            color: #d4d4d4;
+        }
+
+        .preview blockquote {
+            border-left: 4px solid #61dafb;
+            margin: 0.5em 0;
+            padding: 0.3em 1em;
+            background: rgba(97, 218, 251, 0.1);
+            color: #9cdcfe;
+        }
+
+        .preview ul, .preview ol {
+            margin: 0.2em 0 0.6em;
+            margin-left: 0;
+            padding-left: 1.2em;
+            list-style-position: outside;
+        }
+
+        .preview li {
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        .preview ul + p, .preview ol + p {
+            margin-top: 0.6em;
+        }
+
+        .preview img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 1em 0;
+        }
+
+        .preview table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.2em 0;
+            margin-left: 0 !important;
+        }
+
+        .preview table + table {
+            margin-top: 0.3em;
+        }
+
+        .preview th, .preview td {
+            border: 1px solid #404040;
+            padding: 10px 15px;
+            text-align: left;
+        }
+
+        .preview th {
+            background: #2d2d2d;
+            color: #61dafb;
+        }
+
+        .preview tr:nth-child(even) {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .preview hr {
+            border: none;
+            border-top: 1px solid #404040;
+            margin: 2em 0;
+        }
+
+        .preview .task-list-item {
+            list-style: none;
+            margin-left: -1.2em;
+        }
+
+        .preview .task-list-item input {
+            margin-right: 0.5em;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            background: #007acc;
+            padding: 4px 15px;
+            font-size: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #2d2d2d;
+            border-radius: 12px;
+            padding: 25px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .modal h2 {
+            margin-bottom: 15px;
+            color: #61dafb;
+        }
+
+        .modal p {
+            margin-bottom: 20px;
+            color: #888;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* Theme Button */
+        .theme-btn.active {
+            background: #0e639c;
+            border-color: #1177bb;
+        }
+
+        /* Light Theme */
+        body.light {
+            background-color: #ffffff;
+            color: #333333;
+        }
+
+        body.light .header {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            border-bottom: 1px solid #ddd;
+        }
+
+        body.light .header h1 {
+            color: #0066cc;
+        }
+
+        body.light .header-btn {
+            background: #ffffff;
+            border: 1px solid #ccc;
+            color: #333;
+        }
+
+        body.light .header-btn:hover {
+            background: #f0f0f0;
+            border-color: #0066cc;
+        }
+
+        body.light .header-btn.primary {
+            background: #0066cc;
+            border-color: #0055aa;
+            color: white;
+        }
+
+        body.light .header-btn.primary:hover {
+            background: #0055aa;
+        }
+
+        body.light .theme-btn.active {
+            background: #0066cc;
+            border-color: #0055aa;
+            color: white;
+        }
+
+        body.light .toolbar {
+            background: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+        }
+
+        body.light .toolbar-btn {
+            color: #333;
+        }
+
+        body.light .toolbar-btn:hover {
+            background: #e0e0e0;
+            border-color: #ccc;
+        }
+
+        body.light .toolbar-separator {
+            background: #ddd;
+        }
+
+        body.light .editor-panel {
+            border-right: 3px solid #ddd;
+        }
+
+        body.light .panel-header {
+            background: #f5f5f5;
+            color: #666;
+            border-bottom: 1px solid #ddd;
+        }
+
+        body.light .editor {
+            background: #ffffff;
+            color: #333;
+        }
+
+        body.light .editor::placeholder {
+            color: #999;
+        }
+
+        body.light .resizer {
+            background: #ddd;
+        }
+
+        body.light .resizer:hover {
+            background: #0066cc;
+        }
+
+        body.light .preview-panel {
+            background: #fafafa;
+        }
+
+        body.light .preview h1 {
+            color: #0066cc;
+            border-bottom: 2px solid #ddd;
+        }
+
+        body.light .preview h2 {
+            color: #0077dd;
+        }
+
+        body.light .preview h3 {
+            color: #0088ee;
+        }
+
+        body.light .preview h4,
+        body.light .preview h5,
+        body.light .preview h6 {
+            color: #0099ff;
+        }
+
+        body.light .preview p {
+            color: #333;
+        }
+
+        body.light .preview a {
+            color: #0066cc;
+        }
+
+        body.light .preview code {
+            background: #f0f0f0;
+            color: #c7254e;
+        }
+
+        body.light .preview pre {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+        }
+
+        body.light .preview pre code {
+            color: #333;
+        }
+
+        body.light .preview blockquote {
+            border-left: 4px solid #0066cc;
+            background: rgba(0, 102, 204, 0.05);
+            color: #555;
+        }
+
+        body.light .preview table {
+            border: 1px solid #ddd;
+        }
+
+        body.light .preview th,
+        body.light .preview td {
+            border: 1px solid #ddd;
+        }
+
+        body.light .preview th {
+            background: #f5f5f5;
+            color: #0066cc;
+        }
+
+        body.light .preview tr:nth-child(even) {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        body.light .preview hr {
+            border-top: 1px solid #ddd;
+        }
+
+        body.light .status-bar {
+            background: #0066cc;
+        }
+
+        body.light ::-webkit-scrollbar-track {
+            background: #f0f0f0;
+        }
+
+        body.light ::-webkit-scrollbar-thumb {
+            background: #ccc;
+        }
+
+        body.light ::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📝 Markdown Editor <span style="font-size: 0.5em; font-weight: normal; color: #888;">(ver.01)</span></h1>
+        <div class="header-buttons">
+            <button class="header-btn theme-btn" id="darkThemeBtn" onclick="setTheme('dark')">🌙 Dark</button>
+            <button class="header-btn theme-btn" id="lightThemeBtn" onclick="setTheme('light')">☀️ Light</button>
+            <button class="header-btn" onclick="newDocument()">New</button>
+            <button class="header-btn" onclick="openFile()">Open</button>
+            <button class="header-btn primary" onclick="saveFile()">Save</button>
+            <button class="header-btn" onclick="exportHTML()">Export HTML</button>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <button class="toolbar-btn" onclick="insertText('# ', '')" title="Heading 1">H1</button>
+        <button class="toolbar-btn" onclick="insertText('## ', '')" title="Heading 2">H2</button>
+        <button class="toolbar-btn" onclick="insertText('### ', '')" title="Heading 3">H3</button>
+        <div class="toolbar-separator"></div>
+        <button class="toolbar-btn" onclick="insertText('**', '**')" title="Bold"><b>B</b></button>
+        <button class="toolbar-btn" onclick="insertText('*', '*')" title="Italic"><i>I</i></button>
+        <button class="toolbar-btn" onclick="insertText('~~', '~~')" title="Strikethrough"><s>S</s></button>
+        <button class="toolbar-btn" onclick="insertText('`', '`')" title="Inline Code">Code</button>
+        <div class="toolbar-separator"></div>
+        <button class="toolbar-btn" onclick="insertText('- ', '')" title="Bullet List">• List</button>
+        <button class="toolbar-btn" onclick="insertText('1. ', '')" title="Numbered List">1. List</button>
+        <button class="toolbar-btn" onclick="insertText('- [ ] ', '')" title="Checkbox">☑ Task</button>
+        <div class="toolbar-separator"></div>
+        <button class="toolbar-btn" onclick="insertText('[', '](url)')" title="Link">🔗 Link</button>
+        <button class="toolbar-btn" onclick="insertText('![alt](', ')')" title="Image">🖼 Image</button>
+        <button class="toolbar-btn" onclick="insertText('> ', '')" title="Quote">❝ Quote</button>
+        <button class="toolbar-btn" onclick="insertText('\n```\n', '\n```\n')" title="Code Block">{ } Block</button>
+        <button class="toolbar-btn" onclick="insertText('\n---\n', '')" title="Horizontal Rule">― Line</button>
+        <button class="toolbar-btn" onclick="insertTable()" title="Table">▦ Table</button>
+    </div>
+
+    <div class="container">
+        <div class="editor-panel" id="editorPanel">
+            <div class="panel-header">
+                <span>✏️ Editor (Markdown)</span>
+                <span id="charCount">0 chars</span>
+            </div>
+            <textarea class="editor" id="editor" placeholder="Write your markdown here..."></textarea>
+        </div>
+
+        <div class="resizer" id="resizer"></div>
+
+        <div class="preview-panel" id="previewPanel">
+            <div class="panel-header">
+                <span>👁️ Preview</span>
+                <button class="toolbar-btn" onclick="toggleSync()" id="syncBtn">🔄 Sync Scroll</button>
+            </div>
+            <div class="preview" id="preview"></div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span id="statusLeft">Ready</span>
+        <span id="statusRight">Ln: 1, Col: 1</span>
+    </div>
+
+    <input type="file" id="fileInput" accept=".md,.txt,.markdown" style="display:none">
+
+    <script>
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const charCount = document.getElementById('charCount');
+        const statusLeft = document.getElementById('statusLeft');
+        const statusRight = document.getElementById('statusRight');
+        const resizer = document.getElementById('resizer');
+        const editorPanel = document.getElementById('editorPanel');
+        const previewPanel = document.getElementById('previewPanel');
+        const fileInput = document.getElementById('fileInput');
+
+        let syncScroll = true;
+        let isResizing = false;
+
+        function setTheme(theme) {
+            const body = document.body;
+            const darkBtn = document.getElementById('darkThemeBtn');
+            const lightBtn = document.getElementById('lightThemeBtn');
+
+            if (theme === 'light') {
+                body.classList.add('light');
+                darkBtn.classList.remove('active');
+                lightBtn.classList.add('active');
+            } else {
+                body.classList.remove('light');
+                darkBtn.classList.add('active');
+                lightBtn.classList.remove('active');
+            }
+
+            localStorage.setItem('markdown-theme', theme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('markdown-theme') || 'dark';
+            setTheme(savedTheme);
+        }
+
+        function parseMarkdown(text) {
+            const sections = text.split(/^---$/gm);
+            return sections.map((section, index) => {
+                let html = parseSectionWithTables(section.trim());
+                if (index > 0) {
+                    html = '<hr>' + html;
+                }
+                return html;
+            }).join('');
+        }
+
+        function parseSectionWithTables(text) {
+            if (!text) return '';
+
+            const lines = text.split('\n');
+            const parts = [];
+            let currentPart = [];
+            let inTable = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const isTableLine = line.trim().startsWith('|') && line.trim().endsWith('|');
+
+                if (isTableLine && !inTable) {
+                    if (currentPart.length > 0) {
+                        parts.push({ type: 'text', content: currentPart.join('\n').trim() });
+                        currentPart = [];
+                    }
+                    inTable = true;
+                    currentPart.push(line);
+                } else if (isTableLine && inTable) {
+                    currentPart.push(line);
+                } else if (!isTableLine && inTable) {
+                    parts.push({ type: 'table', content: currentPart.join('\n').trim() });
+                    currentPart = [];
+                    inTable = false;
+                    if (line.trim()) {
+                        currentPart.push(line);
+                    }
+                } else {
+                    currentPart.push(line);
+                }
+            }
+
+            if (currentPart.length > 0) {
+                const content = currentPart.join('\n').trim();
+                if (content) {
+                    parts.push({ type: inTable ? 'table' : 'text', content: content });
+                }
+            }
+
+            if (parts.length === 0) {
+                return parseSection(text);
+            }
+
+            return parts.map(part => {
+                if (part.type === 'table') {
+                    return parseTableOnly(part.content);
+                } else {
+                    return parseSection(part.content);
+                }
+            }).join('');
+        }
+
+        function parseTableOnly(text) {
+            const lines = text.trim().split('\n');
+            const rows = [];
+            let isFirstDataRow = true;
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed.startsWith('|') || !trimmed.endsWith('|')) continue;
+
+                const content = trimmed.slice(1, -1);
+                const cells = content.split('|').map(c => c.trim());
+
+                if (cells.every(c => /^[-:]+$/.test(c))) {
+                    continue;
+                }
+
+                if (isFirstDataRow) {
+                    const row = cells.map(c => `<th>${parseInline(c)}</th>`).join('');
+                    rows.push(`<tr>${row}</tr>`);
+                    isFirstDataRow = false;
+                } else {
+                    const row = cells.map(c => `<td>${parseInline(c)}</td>`).join('');
+                    rows.push(`<tr>${row}</tr>`);
+                }
+            }
+
+            if (rows.length === 0) return '';
+            return `<table>${rows.join('')}</table>`;
+        }
+
+        function parseSection(text) {
+            if (!text) return '';
+
+            const lines = text.split('\n');
+            const result = [];
+            let inList = false;
+            let inCodeBlock = false;
+            let codeBlockLang = '';
+            let codeBlockContent = [];
+            let paragraphLines = [];
+
+            function flushParagraph() {
+                if (paragraphLines.length > 0) {
+                    const content = paragraphLines.join('<br>');
+                    if (content.trim()) {
+                        result.push('<p>' + parseInline(content) + '</p>');
+                    }
+                    paragraphLines = [];
+                }
+            }
+
+            function flushList() {
+                if (inList) {
+                    result.push('</ul>');
+                    inList = false;
+                }
+            }
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                if (line.startsWith('```')) {
+                    if (!inCodeBlock) {
+                        flushParagraph();
+                        flushList();
+                        inCodeBlock = true;
+                        codeBlockLang = line.slice(3).trim();
+                        codeBlockContent = [];
+                    } else {
+                        result.push(`<pre><code class="language-${codeBlockLang}">${escapeHtml(codeBlockContent.join('\n'))}</code></pre>`);
+                        inCodeBlock = false;
+                    }
+                    continue;
+                }
+
+                if (inCodeBlock) {
+                    codeBlockContent.push(line);
+                    continue;
+                }
+
+                if (line.trim() === '') {
+                    flushParagraph();
+                    flushList();
+                    continue;
+                }
+
+                const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+                if (headingMatch) {
+                    flushParagraph();
+                    flushList();
+                    const level = headingMatch[1].length;
+                    result.push(`<h${level}>${parseInline(headingMatch[2])}</h${level}>`);
+                    continue;
+                }
+
+                if (line.startsWith('> ')) {
+                    flushParagraph();
+                    flushList();
+                    result.push(`<blockquote>${parseInline(line.slice(2))}</blockquote>`);
+                    continue;
+                }
+
+                if (/^(\*\*\*|___)$/.test(line.trim())) {
+                    flushParagraph();
+                    flushList();
+                    result.push('<hr>');
+                    continue;
+                }
+
+                const taskMatch = line.match(/^- \[([ x])\]\s+(.+)$/);
+                if (taskMatch) {
+                    flushParagraph();
+                    const checked = taskMatch[1] === 'x' ? ' checked' : '';
+                    if (!inList) {
+                        result.push('<ul>');
+                        inList = true;
+                    }
+                    result.push(`<li class="task-list-item"><input type="checkbox"${checked} disabled> ${parseInline(taskMatch[2])}</li>`);
+                    continue;
+                }
+
+                const ulMatch = line.match(/^[\*\-]\s+(.+)$/);
+                if (ulMatch) {
+                    flushParagraph();
+                    if (!inList) {
+                        result.push('<ul>');
+                        inList = true;
+                    }
+                    result.push(`<li>${parseInline(ulMatch[1])}</li>`);
+                    continue;
+                }
+
+                const olMatch = line.match(/^\d+\.\s+(.+)$/);
+                if (olMatch) {
+                    flushParagraph();
+                    if (!inList) {
+                        result.push('<ul>');
+                        inList = true;
+                    }
+                    result.push(`<li>${parseInline(olMatch[1])}</li>`);
+                    continue;
+                }
+
+                flushList();
+                paragraphLines.push(line);
+            }
+
+            flushParagraph();
+            flushList();
+
+            let html = result.join('\n');
+            html = html.replace(/<\/blockquote>\n<blockquote>/g, '<br>');
+
+            return html;
+        }
+
+        function parseInline(text) {
+            let html = text;
+
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+            html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" title="$1">');
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+            return html;
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function updatePreview() {
+            const markdown = editor.value;
+            const html = parseMarkdown(markdown);
+            preview.innerHTML = html;
+            charCount.textContent = `${markdown.length} chars`;
+            statusLeft.textContent = 'Editing...';
+        }
+
+        function updateCursorPosition() {
+            const text = editor.value.substring(0, editor.selectionStart);
+            const lines = text.split('\n');
+            const line = lines.length;
+            const col = lines[lines.length - 1].length + 1;
+            statusRight.textContent = `Ln: ${line}, Col: ${col}`;
+        }
+
+        function insertText(before, after) {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const selected = editor.value.substring(start, end);
+            const replacement = before + selected + after;
+
+            editor.value = editor.value.substring(0, start) + replacement + editor.value.substring(end);
+
+            const newPos = start + before.length + selected.length;
+            editor.setSelectionRange(newPos, newPos);
+            editor.focus();
+
+            updatePreview();
+        }
+
+        function insertTable() {
+            const table = `
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+`;
+            insertText(table, '');
+        }
+
+        function newDocument() {
+            if (editor.value && !confirm('Discard current document and create a new one?')) {
+                return;
+            }
+            editor.value = '';
+            updatePreview();
+            statusLeft.textContent = 'New Document';
+        }
+
+        function openFile() {
+            fileInput.click();
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    editor.value = e.target.result;
+                    updatePreview();
+                    statusLeft.textContent = `Opened: ${file.name}`;
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        async function saveFile() {
+            const content = editor.value;
+
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: 'document.md',
+                        types: [{
+                            description: 'Markdown File',
+                            accept: { 'text/markdown': ['.md'] }
+                        }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(content);
+                    await writable.close();
+                    statusLeft.textContent = `Saved: ${handle.name}`;
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('Save failed:', err);
+                    }
+                }
+            } else {
+                const filename = prompt('Enter filename:', 'document.md');
+                if (!filename) return;
+
+                const finalName = filename.endsWith('.md') ? filename : filename + '.md';
+                const blob = new Blob([content], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = finalName;
+                a.click();
+                URL.revokeObjectURL(url);
+                statusLeft.textContent = `Saved: ${finalName}`;
+            }
+        }
+
+        function exportHTML() {
+            const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Export</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 8px; overflow-x: auto; }
+        blockquote { border-left: 4px solid #0066cc; margin: 1em 0; padding: 0.5em 1em; background: #f0f7ff; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 10px; }
+        th { background: #f4f4f4; }
+        img { max-width: 100%; }
+    </style>
+</head>
+<body>
+${preview.innerHTML}
+</body>
+</html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'document.html';
+            a.click();
+            URL.revokeObjectURL(url);
+            statusLeft.textContent = 'HTML Export Complete';
+        }
+
+        function toggleSync() {
+            syncScroll = !syncScroll;
+            document.getElementById('syncBtn').textContent = syncScroll ? '🔄 Sync Scroll' : '⏸️ Scroll Separate';
+        }
+
+        editor.addEventListener('scroll', () => {
+            if (syncScroll) {
+                const percentage = editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
+                preview.scrollTop = percentage * (preview.scrollHeight - preview.clientHeight);
+            }
+        });
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const containerRect = document.querySelector('.container').getBoundingClientRect();
+            const percentage = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+
+            if (percentage > 20 && percentage < 80) {
+                editorPanel.style.flex = `0 0 ${percentage}%`;
+                previewPanel.style.flex = `0 0 ${100 - percentage}%`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        });
+
+        editor.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'b':
+                        e.preventDefault();
+                        insertText('**', '**');
+                        break;
+                    case 'i':
+                        e.preventDefault();
+                        insertText('*', '*');
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        saveFile();
+                        break;
+                    case 'k':
+                        e.preventDefault();
+                        insertText('[', '](url)');
+                        break;
+                }
+            }
+
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                insertText('    ', '');
+            }
+        });
+
+        editor.addEventListener('input', updatePreview);
+        editor.addEventListener('click', updateCursorPosition);
+        editor.addEventListener('keyup', updateCursorPosition);
+
+        window.addEventListener('load', () => {
+            loadTheme();
+
+            editor.value = `# Welcome to Markdown Editor! 🎉
+
+## Features
+
+This editor supports **real-time preview**. Write markdown on the left and see the result instantly on the right.
+
+> To create new content, click the **New** button or press **Ctrl+A** to select all and delete.
+
+### Text Styling
+
+- **Bold** - Ctrl+B
+- *Italic* - Ctrl+I
+- ~~Strikethrough~~
+- \`Inline Code\`
+
+### Lists
+
+1. First item
+2. Second item
+3. Third item
+
+- Unordered list
+- Another item
+  - Sub item
+
+### Checklist
+
+- [x] Completed task
+- [ ] Pending task
+- [ ] Another task
+
+### Code Block
+
+\`\`\`javascript
+function hello() {
+    console.log("Hello, Markdown!");
+}
+\`\`\`
+
+### Quote
+
+> Markdown is a text-based markup language,
+> known for being easy to read and write.
+
+### Links and Images
+
+[Go to Google](https://www.google.com)
+
+---
+
+Happy writing! ✨`;
+
+            updatePreview();
+            updateCursorPosition();
+            statusLeft.textContent = 'Ready';
+        });
+    </script>
+</body>
+</html>
